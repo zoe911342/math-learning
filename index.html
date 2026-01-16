@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>基礎除法 - 商一位數引導版</title>
+    <style>
+        :root {
+            --cell: 70px;
+            --primary: #3498db;
+            --success: #2ecc71;
+            --active-bg: #fff9c4;
+            --sidebar-bg: #e3f2fd;
+        }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8f9fa; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .game-container { display: flex; gap: 30px; align-items: flex-start; }
+        
+        /* 側邊欄 */
+        .sidebar { background: var(--sidebar-bg); padding: 20px; border-radius: 20px; width: 200px; border: 2px solid #bbdefb; }
+        .m-row { padding: 6px; font-size: 24px; text-align: center; font-weight: bold; color: #444; }
+
+        /* 主面板 */
+        .main-panel { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 500px; text-align: center; position: relative; }
+        .hint-box { background: #fff4e5; color: #d35400; padding: 15px; border-radius: 12px; font-weight: bold; font-size: 22px; margin-bottom: 25px; border: 1px dashed #fab1a0; min-height: 35px; }
+        
+        .division-grid {
+            display: grid;
+            grid-template-columns: var(--cell) 30px var(--cell) var(--cell);
+            grid-template-rows: repeat(4, var(--cell));
+            align-items: center; justify-content: center;
+            font-size: 38px; margin: 20px 0; position: relative;
+        }
+        .cell { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; position: relative; }
+        
+        .answer-box {
+            width: 60px; height: 60px; font-size: 36px; text-align: center;
+            border: 2px solid #ccc; border-radius: 12px; background: #fdfdfd;
+            display: flex; align-items: center; justify-content: center; visibility: hidden;
+        }
+        .answer-box.v { visibility: visible; }
+        .answer-box.active { background-color: var(--active-bg); border: 3px solid #fbc02d; transform: scale(1.1); }
+        .answer-box.correct { border: 2px solid transparent; background: transparent; font-weight: bold; animation: pop 0.4s ease; }
+        .answer-box.wrong { background-color: #fdeaea; border-color: #e74c3c; animation: shake 0.3s; }
+
+        /* 引導箭頭：除數到商，或是商到積 */
+        .guide-arrow {
+            position: absolute; width: 3px; background-color: var(--primary);
+            height: 40px; visibility: hidden; z-index: 1;
+        }
+        .guide-arrow::after { content: '▼'; position: absolute; bottom: -12px; left: -7px; font-size: 16px; color: var(--primary); }
+        .guide-arrow.v { visibility: visible; }
+
+        .div-arc { border-top: 5px solid #333; border-left: 5px solid #333; border-top-left-radius: 25px; grid-column: 3/5; grid-row: 2; height: 100%; margin-top: 5px; }
+        .minus { grid-column: 2; font-weight: bold; font-size: 45px; visibility: hidden; }
+        .line { border-top: 5px solid #333; grid-column: 2/5; align-self: start; visibility: hidden; }
+        .v { visibility: visible !important; }
+
+        /* 特效 */
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: var(--success); } 100% { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        /* 鍵盤 */
+        .keypad { display: grid; grid-template-columns: repeat(3, 80px); gap: 12px; background: #34495e; padding: 20px; border-radius: 20px; }
+        .key { width: 80px; height: 80px; background: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 0 #bdc3c7; }
+        .key:active { transform: translateY(4px); box-shadow: 0 2px 0 #bdc3c7; }
+
+        /* 獎勵視窗 */
+        #win-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 40px; border-radius: 30px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="win-modal">
+    <div class="modal-content">
+        <h1 id="win-title" style="font-size: 50px; color: #f1c40f;">很好！</h1>
+        <p id="win-msg" style="font-size: 24px;">計算完全正確！</p>
+        <button onclick="closeModal()" style="padding: 15px 40px; font-size: 24px; background: var(--success); color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold;">挑戰下一題</button>
+    </div>
+</div>
+
+<div class="game-container">
+    <div class="sidebar" id="multi-table"></div>
+
+    <div class="main-panel">
+        <div style="display:flex; justify-content: space-between; font-weight: bold; margin-bottom:10px;">
+            <span id="progress" style="color:#7f8c8d">基礎練習</span>
+            <span id="score-ui" style="color:var(--success); font-size: 24px;">得分：0</span>
+        </div>
+        <div class="hint-box" id="hint">準備中...</div>
+
+        <div class="division-grid">
+            <div class="cell" style="grid-column: 4; grid-row: 1;"><div id="q" class="answer-box"></div></div>
+            
+            <div class="cell" style="grid-column: 1; grid-row: 2; font-weight: bold; color: #2980b9;" id="ui-sor"></div>
+            <div class="div-arc"></div>
+            <div class="cell" style="grid-column: 3; grid-row: 2;" id="d1"></div>
+            <div class="cell" style="grid-column: 4; grid-row: 2;" id="d2"></div>
+
+            <div class="cell minus" id="m-s" style="grid-row: 3;">−</div>
+            <div class="cell" style="grid-column: 3; grid-row: 3;"><div id="m1" class="answer-box"></div></div>
+            <div class="cell" style="grid-column: 4; grid-row: 3;"><div id="m2" class="answer-box"></div></div>
+            <div class="line" id="l1" style="grid-row: 4;"></div>
+            <div class="cell" style="grid-column: 4; grid-row: 4;"><div id="r" class="answer-box"></div></div>
+        </div>
+    </div>
+
+    <div class="keypad" id="keys"></div>
+</div>
+
+<script>
+    let state = { score:0, step:0, sor:0, divi:0, q:0, m:0, r:0, currentId: '' };
+    const stepIds = ['q', 'm1', 'm2', 'r'];
+    const praises = ["太棒了！", "正確！", "你好聰明！", "沒錯！"];
+
+    function init() {
+        // 產生商為 1 位數的題目
+        state.sor = Math.floor(Math.random() * 8) + 2; // 除數 2~9
+        state.q = Math.floor(Math.random() * 9) + 1;   // 商 1~9
+        state.r = Math.floor(Math.random() * state.sor); // 隨機餘數 (包含0)
+        state.divi = state.sor * state.q + state.r;    // 計算被除數
+        
+        state.m = state.sor * state.q;
+
+        // UI 顯示
+        document.getElementById('ui-sor').innerText = state.sor;
+        let dStr = String(state.divi).padStart(2, ' ');
+        document.getElementById('d1').innerText = dStr[0] === ' ' ? '' : dStr[0];
+        document.getElementById('d2').innerText = dStr[1];
+        
+        let h = "<h3>乘法表</h3>"; for(let i=1; i<=9; i++) h += `<div class="m-row">${state.sor} × ${i} = ${state.sor*i}</div>`;
+        document.getElementById('multi-table').innerHTML = h;
+
+        let kH = ""; for(let i=1; i<=9; i++) kH += `<div class="key" onclick="handleInput(${i})">${i}</div>`;
+        kH += `<div class="key" style="grid-column:span 3; background:#f1c40f;" onclick="handleInput(0)">0</div>`;
+        document.getElementById('keys').innerHTML = kH;
+
+        resetUI();
+    }
+
+    function handleInput(num) {
+        const targets = [
+            state.q, 
+            Math.floor(state.m / 10), 
+            state.m % 10, 
+            state.r
+        ];
+        const target = targets[state.step];
+        const el = document.getElementById(state.currentId);
+        
+        if (num === target) {
+            el.innerText = num; el.classList.remove('active', 'wrong'); el.classList.add('correct');
+            state.step++;
+            if (state.step >= stepIds.length) finish(); else nextStep();
+        } else { el.classList.add('wrong'); }
+    }
+
+    function nextStep() {
+        state.currentId = stepIds[state.step];
+        const el = document.getElementById(state.currentId);
+
+        if(state.step === 1) {
+            document.getElementById('m-s').classList.add('v');
+            // 如果積小於10，自動跳過十位格
+            if(state.m < 10) { 
+                el.innerText = "0"; el.style.visibility = "hidden";
+                state.step++; nextStep(); return; 
+            }
+        }
+        if(state.step === 3) document.getElementById('l1').classList.add('v');
+
+        el.classList.add('v', 'active');
+        updateHint();
+    }
+
+    function updateHint() {
+        const msgs = ["商是多少？(看乘法表最接近的)", "積的十位？", "積的個位？", "剩下的餘數是多少？"];
+        document.getElementById('hint').innerText = "💡 " + msgs[state.step];
+    }
+
+    function resetUI() {
+        state.step = 0; state.currentId = 'q';
+        document.querySelectorAll('.answer-box, .minus, .line').forEach(e => { e.classList.remove('v', 'active', 'correct', 'wrong'); e.innerText = ''; });
+        document.querySelectorAll('.answer-box').forEach(e => e.style.visibility = 'hidden');
+        document.getElementById('q').classList.add('v', 'active');
+        updateHint();
+    }
+
+    function finish() {
+        const modal = document.getElementById('win-modal');
+        const title = document.getElementById('win-title');
+        const msg = document.getElementById('win-msg');
+        
+        if(state.r === 0) {
+            title.innerText = "✨ 整除完成 ✨";
+            msg.innerText = `${state.divi} ÷ ${state.sor} = ${state.q}，沒有餘數喔！`;
+        } else {
+            title.innerText = "🌟 計算成功 🌟";
+            msg.innerText = `${state.divi} ÷ ${state.sor} = ${state.q} ... ${state.r}`;
+        }
+        
+        modal.style.display = 'flex';
+        state.score += 10;
+        document.getElementById('score-ui').innerText = `得分：${state.score}`;
+    }
+
+    function closeModal() {
+        document.getElementById('win-modal').style.display = 'none';
+        init();
+    }
+
+    init();
+</script>
+</body>
+</html>
